@@ -19,6 +19,7 @@
                    displayName="Source Files"
                    projectFiles="true">
     </logicalFolder>
+    <itemPath>newmain.c</itemPath>
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
