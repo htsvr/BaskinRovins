@@ -15,27 +15,38 @@
 
 int main(void) {
     
-    ANSA = 0;
-    ANSB = 0;
-    LATA = 0;
-    LATB = 0;
     
-    TRISAbits.TRISA0 = 0;
-    TRISAbits.TRISA1 = 0;
-    TRISBbits.TRISB0 = 0;
-    TRISBbits.TRISB1 = 0;
+    ANSA = 0; // Disables analog mode on port A
+    ANSB = 0; // Disables analog mode on port B
+    LATA = 0; // Sets all pins on port A to low (0V)
+    LATB = 0; // Sets all pins on port A to low (0V)
     
-    long forwardDrive = 2000;
-    long turn90 = 400;
-    long turn180 = 800;
     
-    void stepLeft() {
-        LATAbits.LATA1 = 1;
-        __delay_us(500);
-        LATAbits.LATA1 = 0;
-        __delay_us(500);
+    TRISAbits.TRISA0 = 0; // Sets RA0 to output
+    TRISAbits.TRISA1 = 0; // Sets RA1 to output
+    TRISBbits.TRISB0 = 0; // Sets RB0 to output
+    TRISBbits.TRISB1 = 0; // Sets RB1 to output
+    
+    
+    long forwardDrive = 2000; // Sets step pulses
+    long turn90 = 200;
+    long turn180 = 450;
+
+    
+    void __delay_us(int us) {
+        for (int i = 0; i < us/3; i ++) {         
+        }
+    }
+    
+    
+    void stepLeft() { // Manually generates one complete step pulse for left motor (Use OCIRS instead)
+        LATAbits.LATA1 = 1; // Sets RA1 (STEP) HIGH
+        __delay_us(500); // Waits 500 microseconds while the STEP pin stays HIGH
+        LATAbits.LATA1 = 0; // Sets RA1 (STEP) LOW
+        __delay_us(500); // Waits 500 microseconds while the STEP pin stays LOW
     }
 
+    
     void stepRight() {
         LATBbits.LATB1 = 1;
         __delay_us(500);
@@ -43,7 +54,8 @@ int main(void) {
         __delay_us(500);
     }
     
-    void driveForward(long steps) {
+    
+    void driveForward(long steps) { // Sets both motors to HIGH
         LATAbits.LATA0 = 1;  // Left CW
         LATBbits.LATB0 = 1;  // Right CW
     
@@ -53,7 +65,8 @@ int main(void) {
         }
     }   
     
-    void turnRight(long steps) {
+    
+    void turnRight(long steps) { // Motors spin opposite directions (turns)
         LATAbits.LATA0 = 1;  // Left CW
         LATBbits.LATB0 = 0;  // Right CCW
     
@@ -62,6 +75,7 @@ int main(void) {
             stepRight();
         }
     }
+    
     
     while(1)
     {
@@ -81,4 +95,3 @@ int main(void) {
           
     return 0;
 }
-    
