@@ -20,6 +20,8 @@
                    projectFiles="true">
     </logicalFolder>
     <itemPath>newmain.c</itemPath>
+    <itemPath>newmainXC16.c</itemPath>
+    <itemPath>newmain1.c</itemPath>
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>
   <confs>

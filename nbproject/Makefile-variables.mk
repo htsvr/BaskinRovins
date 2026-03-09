@@ -6,5 +6,5 @@
 CND_BASEDIR=`pwd`
 # default configuration
 CND_ARTIFACT_DIR_default=dist/default/production
-CND_ARTIFACT_NAME_default=BaskinRovins.X.production.hex
-CND_ARTIFACT_PATH_default=dist/default/production/BaskinRovins.X.production.hex
+CND_ARTIFACT_NAME_default=BaskinRovins.production.hex
+CND_ARTIFACT_PATH_default=dist/default/production/BaskinRovins.production.hex
