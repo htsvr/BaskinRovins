@@ -19,37 +19,61 @@ unsigned int targetOC2RS = 0;
 
 void __attribute__((interrupt, no_auto_psv)) _T1Interrupt(void)
 {
-    static stepSize = 100
 	_T1IF = 0;	// Clear interrupt flag
+    static stepSize = 100;
     if(_LATA0) {
-        if (_OC1RS < -1*targetOC1RS) {
-            _OC1RS = min(_OC1RS + stepSize, targetOC1RS);
+        if (OC1RS < -1*targetOC1RS) {
+            OC1RS += stepSize;
+            if (OC1RS > -1*targetOC1RS) {
+                OC1RS = targetOC1RS;
+            }
         } else {
-            _OC1RS = max(_OC1RS - stepSize, targetOC1RS);
+            OC1RS -= stepSize;
+            if (OC1RS < -1*targetOC1RS) {
+                OC1RS = targetOC1RS;
+            }
         }
     } else {
-        if (_OC1RS < targetOC1RS) {
-            _OC1RS = min(_OC1RS + stepSize, targetOC1RS);
+        if (OC1RS < targetOC1RS) {
+            OC1RS += stepSize;
+            if (OC1RS > targetOC1RS) {
+                OC1RS = targetOC1RS;
+            }
         } else {
-            _OC1RS = max(_OC1RS - stepSize, targetOC1RS);
+            OC1RS -= stepSize;
+            if (OC1RS < targetOC1RS) {
+                OC1RS = targetOC1RS;
+            }
         }
     }
-    _OC1R = _OC1RS/2;
+    OC1R = OC1RS/2;
     
-    if(_LATA1) {
-        if (_OC2RS < -1*targetOC1RS) {
-            _OC2RS = min(_OC2RS + stepSize, targetOC2RS);
+    if(_LATA0) {
+        if (OC2RS < -1*targetOC2RS) {
+            OC2RS += stepSize;
+            if (OC2RS > -1*targetOC2RS) {
+                OC2RS = targetOC2RS;
+            }
         } else {
-            _OC2RS = max(_OC2RS - stepSize, targetOC2RS);
+            OC2RS -= stepSize;
+            if (OC2RS < -1*targetOC2RS) {
+                OC2RS = targetOC2RS;
+            }
         }
     } else {
-        if (_OC2RS < targetOC1RS) {
-            _OC2RS = min(_OC2RS + stepSize, targetOC2RS);
+        if (OC2RS < targetOC2RS) {
+            OC2RS += stepSize;
+            if (OC2RS > targetOC2RS) {
+                OC2RS = targetOC2RS;
+            }
         } else {
-            _OC2RS = max(_OC2RS - stepSize, targetOC2RS);
+            OC2RS -= stepSize;
+            if (OC2RS < targetOC2RS) {
+                OC2RS = targetOC2RS;
+            }
         }
     }
-    _OC2R = _OC2RS/2;
+    OC2R = OC2RS/2;
 }
 
 int leftQRDIsWhite() {
@@ -72,7 +96,7 @@ void setRightWheelSpeed(double rot_per_sec) {
 }
 
 void setLeftWheelSpeed(double rot_per_sec) {
-    targetOC2RS = 4000000/((rot_per_sec*2*200);
+    targetOC2RS = 4000000/(rot_per_sec*2*200);
     if (rot_per_sec == 0) {
         OC2CON1bits.OCM = 0;
         OC2RS = 0;
@@ -210,12 +234,10 @@ int main(int argc, char** argv) {
                     setLeftWheelSpeed(1);
                 } else if (!rightQRDIsWhite()) {
                     lineFollowingState = LEFT;
-                    setRightWheelSpeed(1));
+                    setRightWheelSpeed(1);
                     setLeftWheelSpeed(2);
                 }
                 break;
-            default:
-                //error
         }
     }
     return (EXIT_SUCCESS);
