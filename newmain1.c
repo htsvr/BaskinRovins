@@ -201,12 +201,12 @@ int main(int argc, char** argv) {
             case CENTERED:
                 if (!leftQRDIsWhite()) {
                     lineFollowingState = LEFT;
-                    setRightWheelSpeed(1);
-                    setLeftWheelSpeed(2);
-                } else if (!rightQRDIsWhite()) {
-                    lineFollowingState = RIGHT;
                     setRightWheelSpeed(2);
                     setLeftWheelSpeed(1);
+                } else if (!rightQRDIsWhite()) {
+                    lineFollowingState = RIGHT;
+                    setRightWheelSpeed(1);
+                    setLeftWheelSpeed(2);
                 }
                 break;
             case LEFT:
@@ -234,12 +234,12 @@ int main(int argc, char** argv) {
             case LOST:
                 if (leftQRDIsWhite()) {
                     lineFollowingState = RIGHT;
-                    setRightWheelSpeed(2);
-                    setLeftWheelSpeed(1);
-                } else if (rightQRDIsWhite()) {
-                    lineFollowingState = LEFT;
                     setRightWheelSpeed(1);
                     setLeftWheelSpeed(2);
+                } else if (rightQRDIsWhite()) {
+                    lineFollowingState = LEFT;
+                    setRightWheelSpeed(2);
+                    setLeftWheelSpeed(1);
                 }
                 break;
         }
