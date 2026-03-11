@@ -85,25 +85,31 @@ int rightQRDIsWhite() {
 }
 
 void setRightWheelSpeed(double rot_per_sec) {
-    targetOC1RS = 4000000/(rot_per_sec*2*200);
-    if (rot_per_sec == 0) {
-        OC1CON1bits.OCM = 0;
-        OC1RS = 0;
-        OC1R = 0;
-    } else {
-        OC1CON1bits.OCM = 0b110;
-    }
+    // targetOC1RS = 4000000/(rot_per_sec*2*200);
+    // if (rot_per_sec == 0) {
+    //     OC1CON1bits.OCM = 0;
+    //     OC1RS = 0;
+    //     OC1R = 0;
+    // } else {
+    //     OC1CON1bits.OCM = 0b110;
+    // }
+    OC1CON1bits.OCM = 0b110;
+    OC1RS = 4000000/(rot_per_sec*2*200);
+    OC1R = OC1RS/2;
 }
 
 void setLeftWheelSpeed(double rot_per_sec) {
-    targetOC2RS = 4000000/(rot_per_sec*2*200);
-    if (rot_per_sec == 0) {
-        OC2CON1bits.OCM = 0;
-        OC2RS = 0;
-        OC2R = 0;
-    } else {
-        OC2CON1bits.OCM = 0b110;
-    }
+    // targetOC2RS = 4000000/(rot_per_sec*2*200);
+    // if (rot_per_sec == 0) {
+    //     OC2CON1bits.OCM = 0;
+    //     OC2RS = 0;
+    //     OC2R = 0;
+    // } else {
+    //     OC2CON1bits.OCM = 0b110;
+    // }
+    OC2CON1bits.OCM = 0b110;
+    OC2RS = 4000000/(rot_per_sec*2*200);
+    OC2R = OC1RS/2;
 }
 void config_ad(void)
 {
@@ -183,7 +189,7 @@ void config() {
     TRISA = 0x0000;
     config_ad();
     config_PWM();
-    configT1();
+    //configT1();
 }
 
 int main(int argc, char** argv) {
