@@ -13,7 +13,7 @@
 // right motor: RB0 = DIR; RB1 = STEP
 
 
-int main(void) {
+int old_main(void) {
 
     ANSA = 0;
     ANSB = 0;
