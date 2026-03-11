@@ -87,7 +87,7 @@ int rightQRDIsWhite() {
 void setRightWheelSpeed(double rot_per_sec) {
     // targetOC1RS = 4000000/(rot_per_sec*2*200);
     if (rot_per_sec == 0) {
-        OC1CON1bits.OCM = 0;
+        OC1R = 0;
     } else {
         OC1RS = 10000/rot_per_sec;
         OC1R = OC1RS/2;
@@ -98,7 +98,7 @@ void setRightWheelSpeed(double rot_per_sec) {
 void setLeftWheelSpeed(double rot_per_sec) {
     //targetOC2RS = 4000000/(rot_per_sec*2*200);
     if (rot_per_sec == 0) {
-        OC2CON1bits.OCM = 0;
+        OC2R = 0;
     } else {
         OC2RS = 10000/rot_per_sec;
         OC2R = OC1RS/2;
@@ -150,18 +150,18 @@ void config_PWM() {
     OC1CON1bits.OCTSEL = 0b111;
     OC1CON2bits.SYNCSEL = 0b11111;
     OC1CON2bits.OCTRIG = 0;
-    OC1RS = 0; // Period
-    OC1R = OC1RS/2; // Duty cycle
-    OC1CON1bits.OCM = 0;
+    OC1RS = 1000; // Period
+    OC1R = 0; // Duty cycle
+    OC1CON1bits.OCM = 0b110;
     
     OC2CON1 = 0;
     OC2CON2 = 0;
     OC2CON1bits.OCTSEL = 0b111;
     OC2CON2bits.SYNCSEL = 0b11111;
     OC2CON2bits.OCTRIG = 0;
-    OC2RS = 0; // Period
-    OC2R = OC2RS/2; // Duty cycle
-    OC2CON1bits.OCM = 0;
+    OC2RS = 1000; // Period
+    OC2R = 0; // Duty cycle
+    OC2CON1bits.OCM = 0b110;
 }
 
 void configT1() {
