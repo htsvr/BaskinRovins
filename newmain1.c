@@ -94,7 +94,7 @@ void setRightWheelSpeed(double rot_per_sec) {
     //     OC1CON1bits.OCM = 0b110;
     // }
     OC1CON1bits.OCM = 0b110;
-    OC1RS = 4000000/(rot_per_sec*2*200);
+    OC1RS = 10000/rot_per_sec;
     OC1R = OC1RS/2;
 }
 
@@ -108,7 +108,7 @@ void setLeftWheelSpeed(double rot_per_sec) {
     //     OC2CON1bits.OCM = 0b110;
     // }
     OC2CON1bits.OCM = 0b110;
-    OC2RS = 4000000/(rot_per_sec*2*200);
+    OC2RS = 10000/rot_per_sec;
     OC2R = OC1RS/2;
 }
 void config_ad(void)
