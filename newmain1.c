@@ -103,7 +103,7 @@ void setLeftWheelSpeed(double rot_per_sec) {
         OC2CON1bits.OCM = 0;
     } else {
         OC2RS = 10000/rot_per_sec;
-        OC2R = OC1RS/2;
+        OC2R = OC2RS/2;
         OC2CON1bits.OCM = 0b110;
     }
 }
