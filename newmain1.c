@@ -88,6 +88,7 @@ void setRightWheelSpeed(double rot_per_sec) {
     // targetOC1RS = 4000000/(rot_per_sec*2*200);
     if (rot_per_sec == 0) {
         OC1R = 0;
+        OC1CON1bits.OCM = 0;
     } else {
         OC1RS = 10000/rot_per_sec;
         OC1R = OC1RS/2;
@@ -99,6 +100,7 @@ void setLeftWheelSpeed(double rot_per_sec) {
     //targetOC2RS = 4000000/(rot_per_sec*2*200);
     if (rot_per_sec == 0) {
         OC2R = 0;
+        OC2CON1bits.OCM = 0;
     } else {
         OC2RS = 10000/rot_per_sec;
         OC2R = OC1RS/2;
@@ -192,6 +194,8 @@ int main(int argc, char** argv) {
     config();
     setRightWheelSpeed(0);
     setLeftWheelSpeed(0);
+    _LATA0 = 1;
+    _LATA1 = 1;
     while(1) {
         switch (lineFollowingState){
             case CENTERED:
@@ -232,7 +236,7 @@ int main(int argc, char** argv) {
                     lineFollowingState = RIGHT;
                     setRightWheelSpeed(2);
                     setLeftWheelSpeed(1);
-                } else if (!rightQRDIsWhite()) {
+                } else if (rightQRDIsWhite()) {
                     lineFollowingState = LEFT;
                     setRightWheelSpeed(1);
                     setLeftWheelSpeed(2);
