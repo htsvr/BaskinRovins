@@ -86,30 +86,24 @@ int rightQRDIsWhite() {
 
 void setRightWheelSpeed(double rot_per_sec) {
     // targetOC1RS = 4000000/(rot_per_sec*2*200);
-    // if (rot_per_sec == 0) {
-    //     OC1CON1bits.OCM = 0;
-    //     OC1RS = 0;
-    //     OC1R = 0;
-    // } else {
-    //     OC1CON1bits.OCM = 0b110;
-    // }
-    OC1CON1bits.OCM = 0b110;
-    OC1RS = 10000/rot_per_sec;
-    OC1R = OC1RS/2;
+    if (rot_per_sec == 0) {
+        OC1CON1bits.OCM = 0;
+    } else {
+        OC1RS = 10000/rot_per_sec;
+        OC1R = OC1RS/2;
+        OC1CON1bits.OCM = 0b110;
+    }
 }
 
 void setLeftWheelSpeed(double rot_per_sec) {
-    // targetOC2RS = 4000000/(rot_per_sec*2*200);
-    // if (rot_per_sec == 0) {
-    //     OC2CON1bits.OCM = 0;
-    //     OC2RS = 0;
-    //     OC2R = 0;
-    // } else {
-    //     OC2CON1bits.OCM = 0b110;
-    // }
-    OC2CON1bits.OCM = 0b110;
-    OC2RS = 10000/rot_per_sec;
-    OC2R = OC1RS/2;
+    //targetOC2RS = 4000000/(rot_per_sec*2*200);
+    if (rot_per_sec == 0) {
+        OC2CON1bits.OCM = 0;
+    } else {
+        OC2RS = 10000/rot_per_sec;
+        OC2R = OC1RS/2;
+        OC2CON1bits.OCM = 0b110;
+    }
 }
 void config_ad(void)
 {
@@ -196,8 +190,8 @@ int main(int argc, char** argv) {
     static enum LineFollowingState {CENTERED, LEFT, RIGHT, LOST};
     static enum LineFollowingState lineFollowingState = LOST;
     config();
-    setRightWheelSpeed(1);
-    setLeftWheelSpeed(1);
+    setRightWheelSpeed(0);
+    setLeftWheelSpeed(0);
     while(1) {
         switch (lineFollowingState){
             case CENTERED:
@@ -219,7 +213,7 @@ int main(int argc, char** argv) {
                 } else if (!rightQRDIsWhite()) {
                     lineFollowingState = LOST;
                     setRightWheelSpeed(0);
-                    setLeftWheelSpeed(2);
+                    setLeftWheelSpeed(0);
                 }
                 break;
             case RIGHT:
@@ -229,7 +223,7 @@ int main(int argc, char** argv) {
                     setLeftWheelSpeed(1);
                 } else if (!leftQRDIsWhite()) {
                     lineFollowingState = LOST;
-                    setRightWheelSpeed(2);
+                    setRightWheelSpeed(0);
                     setLeftWheelSpeed(0);
                 }
                 break;
