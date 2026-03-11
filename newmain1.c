@@ -156,18 +156,18 @@ void config_PWM() {
     OC1CON1bits.OCTSEL = 0b111;
     OC1CON2bits.SYNCSEL = 0b11111;
     OC1CON2bits.OCTRIG = 0;
-    OC1RS = 1000; // Period
+    OC1RS = 0; // Period
     OC1R = OC1RS/2; // Duty cycle
-    OC1CON1bits.OCM = 0b110;
+    OC1CON1bits.OCM = 0;
     
     OC2CON1 = 0;
     OC2CON2 = 0;
     OC2CON1bits.OCTSEL = 0b111;
     OC2CON2bits.SYNCSEL = 0b11111;
     OC2CON2bits.OCTRIG = 0;
-    OC2RS = 1000; // Period
+    OC2RS = 0; // Period
     OC2R = OC2RS/2; // Duty cycle
-    OC2CON1bits.OCM = 0b110;
+    OC2CON1bits.OCM = 0;
 }
 
 void configT1() {
@@ -193,62 +193,59 @@ void config() {
 }
 
 int main(int argc, char** argv) {
-    // static enum LineFollowingState {CENTERED, LEFT, RIGHT, LOST};
-    // static enum LineFollowingState lineFollowingState = LOST;
-    // config();
-    // setRightWheelSpeed(1);
-    // setLeftWheelSpeed(1);
-    // while(1) {
-    //     switch (lineFollowingState){
-    //         case CENTERED:
-    //             if (!leftQRDIsWhite()) {
-    //                 lineFollowingState = LEFT;
-    //                 setRightWheelSpeed(1);
-    //                 setLeftWheelSpeed(2);
-    //             } else if (!rightQRDIsWhite()) {
-    //                 lineFollowingState = RIGHT;
-    //                 setRightWheelSpeed(2);
-    //                 setLeftWheelSpeed(1);
-    //             }
-    //             break;
-    //         case LEFT:
-    //             if (leftQRDIsWhite()) {
-    //                 lineFollowingState = CENTERED;
-    //                 setRightWheelSpeed(1);
-    //                 setLeftWheelSpeed(1);
-    //             } else if (!rightQRDIsWhite()) {
-    //                 lineFollowingState = LOST;
-    //                 setRightWheelSpeed(0);
-    //                 setLeftWheelSpeed(2);
-    //             }
-    //             break;
-    //         case RIGHT:
-    //             if (rightQRDIsWhite()) {
-    //                 lineFollowingState = CENTERED;
-    //                 setRightWheelSpeed(1);
-    //                 setLeftWheelSpeed(1);
-    //             } else if (!leftQRDIsWhite()) {
-    //                 lineFollowingState = LOST;
-    //                 setRightWheelSpeed(2);
-    //                 setLeftWheelSpeed(0);
-    //             }
-    //             break;
-    //         case LOST:
-    //             if (leftQRDIsWhite()) {
-    //                 lineFollowingState = RIGHT;
-    //                 setRightWheelSpeed(2);
-    //                 setLeftWheelSpeed(1);
-    //             } else if (!rightQRDIsWhite()) {
-    //                 lineFollowingState = LEFT;
-    //                 setRightWheelSpeed(1);
-    //                 setLeftWheelSpeed(2);
-    //             }
-    //             break;
-    //     }
-    // }
-
-    config_PWM();
-    while(1) {}
+    static enum LineFollowingState {CENTERED, LEFT, RIGHT, LOST};
+    static enum LineFollowingState lineFollowingState = LOST;
+    config();
+    setRightWheelSpeed(1);
+    setLeftWheelSpeed(1);
+    while(1) {
+        switch (lineFollowingState){
+            case CENTERED:
+                if (!leftQRDIsWhite()) {
+                    lineFollowingState = LEFT;
+                    setRightWheelSpeed(1);
+                    setLeftWheelSpeed(2);
+                } else if (!rightQRDIsWhite()) {
+                    lineFollowingState = RIGHT;
+                    setRightWheelSpeed(2);
+                    setLeftWheelSpeed(1);
+                }
+                break;
+            case LEFT:
+                if (leftQRDIsWhite()) {
+                    lineFollowingState = CENTERED;
+                    setRightWheelSpeed(1);
+                    setLeftWheelSpeed(1);
+                } else if (!rightQRDIsWhite()) {
+                    lineFollowingState = LOST;
+                    setRightWheelSpeed(0);
+                    setLeftWheelSpeed(2);
+                }
+                break;
+            case RIGHT:
+                if (rightQRDIsWhite()) {
+                    lineFollowingState = CENTERED;
+                    setRightWheelSpeed(1);
+                    setLeftWheelSpeed(1);
+                } else if (!leftQRDIsWhite()) {
+                    lineFollowingState = LOST;
+                    setRightWheelSpeed(2);
+                    setLeftWheelSpeed(0);
+                }
+                break;
+            case LOST:
+                if (leftQRDIsWhite()) {
+                    lineFollowingState = RIGHT;
+                    setRightWheelSpeed(2);
+                    setLeftWheelSpeed(1);
+                } else if (!rightQRDIsWhite()) {
+                    lineFollowingState = LEFT;
+                    setRightWheelSpeed(1);
+                    setLeftWheelSpeed(2);
+                }
+                break;
+        }
+    }
     return (EXIT_SUCCESS);
 }
 
