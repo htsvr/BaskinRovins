@@ -298,10 +298,10 @@ int main(int argc, char** argv) {
                 if (!leftQRDIsWhite()) {
                     state = LEFT;
                     setRightWheelSpeed(2);
-                    setLeftWheelSpeed(1);
+                    setLeftWheelSpeed(0.5);
                 } else if (!rightQRDIsWhite()) {
                     state = RIGHT;
-                    setRightWheelSpeed(1);
+                    setRightWheelSpeed(0.5);
                     setLeftWheelSpeed(2);
                 }
                 break;
@@ -312,8 +312,6 @@ int main(int argc, char** argv) {
                     setLeftWheelSpeed(1);
                 } else if (!rightQRDIsWhite()) {
                     state = LOST;
-                    setRightWheelSpeed(0);
-                    setLeftWheelSpeed(0);
                     setTimer(500);
                 }
                 break;
@@ -324,27 +322,22 @@ int main(int argc, char** argv) {
                     setLeftWheelSpeed(1);
                 } else if (!leftQRDIsWhite()) {
                     state = LOST;
-                    setRightWheelSpeed(0);
-                    setLeftWheelSpeed(0);
                     setTimer(500);
                 }
                 break;
             case LOST:
-                if (frontWallDetected()) {
-                    setRightWheelSpeed(1);
-                    setLeftWheelSpeed(1);
-                    state = CANYONSTRAIGHT;
-                } else if (leftQRDIsWhite()) {
+                if (leftQRDIsWhite()) {
                     state = RIGHT;
-                    setRightWheelSpeed(1);
+                    setRightWheelSpeed(0.5);
                     setLeftWheelSpeed(2);
                 } else if (rightQRDIsWhite()) {
                     state = LEFT;
                     setRightWheelSpeed(2);
-                    setLeftWheelSpeed(1);
+                    setLeftWheelSpeed(0.5);
                 } else if (timer2Done()) {
-                    setRightWheelSpeed(0);
-                    setLeftWheelSpeed(0);
+                    setRightWheelSpeed(1);
+                    setLeftWheelSpeed(1);
+                    state = CANYONSTRAIGHT;
                 }
                 break;
             case CANYONSTRAIGHT:
