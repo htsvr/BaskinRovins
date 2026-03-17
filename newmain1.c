@@ -17,7 +17,7 @@ unsigned int targetOC1RS = 0;
 unsigned int targetOC2RS = 0;
 unsigned int numSteps = 0;
 unsigned int targetNumSteps = 0;
-char t2Done = FALSE;
+char t2Done = 0;
 
 void __attribute__((interrupt, no_auto_psv)) _OC2Interrupt(void)
 {
@@ -34,7 +34,7 @@ void __attribute__((interrupt, no_auto_psv)) _OC1Interrupt(void)
 void __attribute__((interrupt, no_auto_psv)) _T2Interrupt(void) {
     _T2IF = 0; // Clear interrupt flag
     T2CONbits.TON = 0; //Turn off timer
-    t2Done = TRUE;
+    t2Done = 1;
 }
 
 void __attribute__((interrupt, no_auto_psv)) _T1Interrupt(void)
@@ -133,14 +133,14 @@ char stepTargetReached() {
         //turn off step counting interupt
         _OC1IE = 0;
         _OC2IE = 0;
-        return TRUE;
+        return 1;
     }
 }
 
 char timer2Done() {
     if (t2Done) {
-        t2Done = FALSE;
-        return TRUE;
+        t2Done = 0;
+        return 1;
     }
 }
 
