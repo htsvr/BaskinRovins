@@ -297,14 +297,16 @@ int main(int argc, char** argv) {
     static enum State {CENTERED, LEFT, RIGHT, LOST, CANYONSTRAIGHT, CANYONTURN, CANYONEXIT, TURNTOLINE};
     static enum State state = LOST;
     config();
-    if(leftWallDetected) {
-        setRightWheelSpeed(1);
-        setLeftWheelSpeed(1);
-    } else {
-        setRightWheelSpeed(0);
-        setLeftWheelSpeed(0);
+    
+    while(1){
+        if(leftWallDetected()) {
+            setRightWheelSpeed(1);
+            setLeftWheelSpeed(1);
+        } else {
+            setRightWheelSpeed(0);
+            setLeftWheelSpeed(0);
+        }
     }
-    while(1){}
 //    while(1) {
 //        switch (state){
 //            case CENTERED:
