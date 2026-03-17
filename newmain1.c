@@ -15,7 +15,27 @@
  */
 unsigned int targetOC1RS = 0;
 unsigned int targetOC2RS = 0;
+unsigned int numSteps = 0;
+unsigned int targetNumSteps = 0;
+char t2Done = FALSE;
 
+void __attribute__((interrupt, no_auto_psv)) _OC2Interrupt(void)
+{
+    _OC2IF = 0;
+    numSteps ++;
+}
+
+void __attribute__((interrupt, no_auto_psv)) _OC1Interrupt(void)
+{
+    _OC1IF = 0;
+    numSteps ++;
+}
+
+void __attribute__((interrupt, no_auto_psv)) _T2Interrupt(void) {
+    _T2IF = 0; // Clear interrupt flag
+    T2CONbits.TON = 0; //Turn off timer
+    t2Done = TRUE;
+}
 
 void __attribute__((interrupt, no_auto_psv)) _T1Interrupt(void)
 {
@@ -84,6 +104,18 @@ int rightQRDIsWhite() {
     return ADC1BUF11 < 4095/3;
 }
 
+double rightWallDetected() {
+    return ADC1BUF11 < 1;
+}
+
+double leftWallDetected() {
+    return ADC1BUF11 < 1;
+}
+
+double frontWallDetected() {
+    return ADC1BUF11 < 1;
+}
+
 void setRightWheelSpeed(double rot_per_sec) {
     // targetOC1RS = 4000000/(rot_per_sec*2*200);
     if (rot_per_sec == 0) {
@@ -94,6 +126,42 @@ void setRightWheelSpeed(double rot_per_sec) {
         OC1R = OC1RS/2;
         OC1CON1bits.OCM = 0b110;
     }
+}
+
+char stepTargetReached() {
+    if (numSteps >= targetNumSteps) {
+        //turn off step counting interupt
+        _OC1IE = 0;
+        _OC2IE = 0;
+        return TRUE;
+    }
+}
+
+char timer2Done() {
+    if (t2Done) {
+        t2Done = FALSE;
+        return TRUE;
+    }
+}
+
+void setTimer(unsigned int ms) {
+    PR2 = ms * 15.625;
+    TMR2 = 0;
+    T2CONbits.TON = 1;
+}
+
+void setAngleTarget(unsigned int degrees) {
+    targetNumSteps = degrees * 100;
+    numSteps = 0;
+    _OC1IE = 1;
+    _OC2IE = 1;
+}
+
+void setDistanceTarget(unsigned int inches) {
+    targetNumSteps = inches * 100;
+    numSteps = 0;
+    _OC1IE = 1;
+    _OC2IE = 1;
 }
 
 void setLeftWheelSpeed(double rot_per_sec) {
@@ -155,6 +223,10 @@ void config_PWM() {
     OC1RS = 1000; // Period
     OC1R = 0; // Duty cycle
     OC1CON1bits.OCM = 0b110;
+    // Set up the interrupt on OC2
+    _OC1IP = 4; // Select the interrupt priority
+    _OC1IF = 0; // Clear the interrupt flag
+    _OC1IE = 0; // Disable the OC2 interrupt
     
     OC2CON1 = 0;
     OC2CON2 = 0;
@@ -164,6 +236,9 @@ void config_PWM() {
     OC2RS = 1000; // Period
     OC2R = 0; // Duty cycle
     OC2CON1bits.OCM = 0b110;
+    _OC2IP = 4; // Select the interrupt priority
+    _OC2IF = 0; // Clear the interrupt flag
+    _OC2IE = 0; // Disable the OC2 interrupt
 }
 
 void configT1() {
@@ -175,6 +250,17 @@ void configT1() {
 	_T1IP = 4;	// Select interrupt priority
 	_T1IF = 0;	// Clear interrupt flag
 	_T1IE = 1;	// Enable interrupt
+}
+
+void configT2() {
+    T2CONbits.TCKPS = 0b11; // 256 prescaler
+    PR2 = 15625; // Period of 1 second
+    T2CONbits.TON = 0;
+    
+	// Configure Timer1 interrupt
+	_T2IP = 5;	// Select interrupt priority
+	_T2IF = 0;	// Clear interrupt flag
+	_T2IE = 1;	// Enable interrupt
 }
 
 void config() {
@@ -189,55 +275,117 @@ void config() {
 }
 
 int main(int argc, char** argv) {
-    static enum LineFollowingState {CENTERED, LEFT, RIGHT, LOST};
-    static enum LineFollowingState lineFollowingState = LOST;
+    static enum State {CENTERED, LEFT, RIGHT, LOST, CANYONSTRAIGHT, CANYONTURN, CANYONEXIT, TURNTOLINE};
+    static enum State state = LOST;
     config();
     setRightWheelSpeed(0);
     setLeftWheelSpeed(0);
     _LATA0 = 1;
     _LATA1 = 1;
     while(1) {
-        switch (lineFollowingState){
+        switch (state){
             case CENTERED:
                 if (!leftQRDIsWhite()) {
-                    lineFollowingState = LEFT;
+                    state = LEFT;
                     setRightWheelSpeed(2);
                     setLeftWheelSpeed(1);
                 } else if (!rightQRDIsWhite()) {
-                    lineFollowingState = RIGHT;
+                    state = RIGHT;
                     setRightWheelSpeed(1);
                     setLeftWheelSpeed(2);
                 }
                 break;
             case LEFT:
                 if (leftQRDIsWhite()) {
-                    lineFollowingState = CENTERED;
+                    state = CENTERED;
                     setRightWheelSpeed(1);
                     setLeftWheelSpeed(1);
                 } else if (!rightQRDIsWhite()) {
-                    lineFollowingState = LOST;
+                    state = LOST;
                     setRightWheelSpeed(0);
                     setLeftWheelSpeed(0);
+                    setTimer(500);
                 }
                 break;
             case RIGHT:
                 if (rightQRDIsWhite()) {
-                    lineFollowingState = CENTERED;
+                    state = CENTERED;
                     setRightWheelSpeed(1);
                     setLeftWheelSpeed(1);
                 } else if (!leftQRDIsWhite()) {
-                    lineFollowingState = LOST;
+                    state = LOST;
+                    setRightWheelSpeed(0);
+                    setLeftWheelSpeed(0);
+                    setTimer(500);
+                }
+                break;
+            case LOST:
+                if (frontWallDetected()) {
+                    setRightWheelSpeed(1);
+                    setLeftWheelSpeed(1);
+                    state = CANYONSTRAIGHT;
+                } else if (leftQRDIsWhite()) {
+                    state = RIGHT;
+                    setRightWheelSpeed(1);
+                    setLeftWheelSpeed(2);
+                } else if (rightQRDIsWhite()) {
+                    state = LEFT;
+                    setRightWheelSpeed(2);
+                    setLeftWheelSpeed(1);
+                } else if (timer2Done()) {
                     setRightWheelSpeed(0);
                     setLeftWheelSpeed(0);
                 }
                 break;
-            case LOST:
+            case CANYONSTRAIGHT:
+                if (frontWallDetected() && leftWallDetected()) {
+                    setRightWheelSpeed(-1);
+                    setLeftWheelSpeed(1);
+                    setAngleTarget(90);
+                    state = CANYONTURN;
+                } else if (frontWallDetected() && rightWallDetected()) {
+                    setRightWheelSpeed(1);
+                    setLeftWheelSpeed(-1);
+                    setAngleTarget(90);
+                    state = CANYONTURN;
+                } else if (leftQRDIsWhite() || rightQRDIsWhite()) {
+                    setDistanceTarget(1);
+                    setRightWheelSpeed(1);
+                    setLeftWheelSpeed(1);
+                    state = CANYONEXIT;
+                }
+                break;
+            case CANYONTURN:
+                if (stepTargetReached()) {
+                    setLeftWheelSpeed(1);
+                    setRightWheelSpeed(1);
+                    state = CANYONSTRAIGHT;
+                } else if (leftQRDIsWhite() || rightQRDIsWhite()) {
+                    setDistanceTarget(1);
+                    setRightWheelSpeed(1);
+                    setLeftWheelSpeed(1);
+                    state = CANYONEXIT;
+                }
+                break;
+            case CANYONEXIT:
+                if (stepTargetReached()) {
+                    if(leftWallDetected()) {
+                        setLeftWheelSpeed(1);
+                        setRightWheelSpeed(0);
+                    } else {
+                        setLeftWheelSpeed(1);
+                        setRightWheelSpeed(0);
+                    }
+                    state = TURNTOLINE;
+                }
+                break;
+            case TURNTOLINE:
                 if (leftQRDIsWhite()) {
-                    lineFollowingState = RIGHT;
+                    state = RIGHT;
                     setRightWheelSpeed(1);
                     setLeftWheelSpeed(2);
                 } else if (rightQRDIsWhite()) {
-                    lineFollowingState = LEFT;
+                    state = LEFT;
                     setRightWheelSpeed(2);
                     setLeftWheelSpeed(1);
                 }
