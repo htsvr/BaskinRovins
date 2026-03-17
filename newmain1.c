@@ -105,15 +105,15 @@ int rightQRDIsWhite() {
 }
 
 double rightWallDetected() {
-    return ADC1BUF11 < 1;
+    return ADC1BUF15 < 1;
 }
 
 double leftWallDetected() {
-    return ADC1BUF11 < 1;
+    return ADC1BUF14 < 1;
 }
 
 double frontWallDetected() {
-    return ADC1BUF11 < 1;
+    return ADC1BUF9 < 1;
 }
 
 void setRightWheelSpeed(double rot_per_sec) {
@@ -158,7 +158,7 @@ void setAngleTarget(unsigned int degrees) {
 }
 
 void setDistanceTarget(unsigned int inches) {
-    targetNumSteps = inches * 100;
+    targetNumSteps = inches * 18;
     numSteps = 0;
     _OC1IE = 1;
     _OC2IE = 1;
