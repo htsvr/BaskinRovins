@@ -121,8 +121,14 @@ void setRightWheelSpeed(double rot_per_sec) {
     if (rot_per_sec == 0) {
         OC1R = 0;
         OC1CON1bits.OCM = 0;
-    } else {
+    } else if (rot_per_sec > 0) {
+        _LATA0 = 1;
         OC1RS = 10000/rot_per_sec;
+        OC1R = OC1RS/2;
+        OC1CON1bits.OCM = 0b110;
+    } else if (rot_per_sec < 0) {
+        _LATA0 = 0;
+        OC1RS = 10000/(-1*rot_per_sec);
         OC1R = OC1RS/2;
         OC1CON1bits.OCM = 0b110;
     }
@@ -151,7 +157,7 @@ void setTimer(unsigned int ms) {
 }
 
 void setAngleTarget(unsigned int degrees) {
-    targetNumSteps = degrees * 100;
+    targetNumSteps = degrees * 5;
     numSteps = 0;
     _OC1IE = 1;
     _OC2IE = 1;
@@ -169,10 +175,16 @@ void setLeftWheelSpeed(double rot_per_sec) {
     if (rot_per_sec == 0) {
         OC2R = 0;
         OC2CON1bits.OCM = 0;
-    } else {
+    } else if (rot_per_sec > 0) {
+        _LATA1 = 1;
         OC2RS = 10000/rot_per_sec;
         OC2R = OC2RS/2;
         OC2CON1bits.OCM = 0b110;
+    } else if (rot_per_sec < 0) {
+        _LATA1 = 0;
+        OC2RS = 10000/(-1*rot_per_sec);
+        OC2R = OC2RS/2;
+        OC1CON1bits.OCM = 0b110;
     }
 }
 void config_ad(void)
@@ -280,8 +292,6 @@ int main(int argc, char** argv) {
     config();
     setRightWheelSpeed(0);
     setLeftWheelSpeed(0);
-    _LATA0 = 1;
-    _LATA1 = 1;
     while(1) {
         switch (state){
             case CENTERED:
