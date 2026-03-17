@@ -335,9 +335,14 @@ int main(int argc, char** argv) {
                     setRightWheelSpeed(2);
                     setLeftWheelSpeed(0.5);
                 } else if (timer2Done()) {
-                    setRightWheelSpeed(1);
-                    setLeftWheelSpeed(1);
-                    state = CANYONSTRAIGHT;
+                    if (rightWallDetected() || leftWallDetected () || frontWallDetected()) {
+                        setRightWheelSpeed(1);
+                        setLeftWheelSpeed(1);
+                        state = CANYONSTRAIGHT;
+                    } else {
+                        setRightWheelSpeed(0);
+                        setLeftWheelSpeed(0);
+                    }
                 }
                 break;
             case CANYONSTRAIGHT:
