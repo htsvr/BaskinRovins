@@ -20,6 +20,7 @@ unsigned int targetOC2RS = 0;
 unsigned int numSteps = 0;
 unsigned int targetNumSteps = 0;
 char t2Done = 0;
+char sampleReturnAllowed = 0;
 
 void __attribute__((interrupt, no_auto_psv)) _OC2Interrupt(void)
 {
@@ -39,10 +40,16 @@ void __attribute__((interrupt, no_auto_psv)) _T2Interrupt(void) {
     t2Done = 1;
 }
 
+void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void) {
+    _T3IF = 0; // Clear interrupt flag
+    T3CONbits.TON = 0; //Turn off timer
+    sampleReturnAllowed = 1;
+}
+
 void __attribute__((interrupt, no_auto_psv)) _T1Interrupt(void)
 {
 	_T1IF = 0;	// Clear interrupt flag
-    static stepSize = 100;
+    static int stepSize = 100;
     if(_LATA0) {
         if (OC1RS < -1*targetOC1RS) {
             OC1RS += stepSize;
@@ -107,11 +114,11 @@ int rightQRDIsWhite() {
 }
 
 char rightWallDetected() {
-    return ADC1BUF3 < 4095/9;
+    return ADC1BUF3 != 0 && ADC1BUF3 < 4095/5;
 }
 
 char leftWallDetected() {
-    return ADC1BUF4 < 4095/9;
+    return ADC1BUF4 != 0 && ADC1BUF4 < 4095/5;
 }
 
 char frontWallDetected() {
@@ -159,6 +166,7 @@ char timer2Done() {
         t2Done = 0;
         return 1;
     }
+    return 0;
 }
 
 void setTimer(unsigned int ms) {
@@ -175,7 +183,7 @@ void setAngleTarget(unsigned int degrees) {
 }
 
 void setDistanceTarget(unsigned int inches) {
-    targetNumSteps = inches * 18;
+    targetNumSteps = inches * 150;
     numSteps = 0;
     _OC1IE = 1;
     _OC2IE = 1;
@@ -286,6 +294,17 @@ void configT2() {
 	_T2IE = 1;	// Enable interrupt
 }
 
+void configT3() {
+    T3CONbits.TCKPS = 0b11; // 256 prescaler
+    PR3 = 62500; // Period of 4 seconds
+    T3CONbits.TON = 1;
+    
+	// Configure Timer1 interrupt
+	_T3IP = 5;	// Select interrupt priority
+	_T3IF = 0;	// Clear interrupt flag
+	_T3IE = 1;	// Enable interrupt
+}
+
 void config() {
     _RCDIV = 0;
     ANSA = 0x0;
@@ -306,6 +325,8 @@ void config() {
     _TRISA2 = 1; //left ultrasonic
     config_ad();
     config_PWM();
+    configT3();
+    configT2();
     //configT1();
 }
 
@@ -313,14 +334,21 @@ int main(int argc, char** argv) {
     static enum State {CENTERED, LEFT, RIGHT, LOST, 
         CANYONSTRAIGHT, CANYONTURN, CANYONEXIT, TURNTOLINE, 
         RETURNWHITETURN, RETURNBLACKTURN, RETURNWHITEFORWARD, RETURNBLACKFORWARD,
-        RETURNWHITEBACKWARD, RETURNBLACKBACKWARD, RETURNTURN};
+        RETURNWHITEBACKWARD, RETURNBLACKBACKWARD, RETURNTURN, RETURNSTRAIGHT};
     static enum State state = LOST;
     config();
-    // setRightWheelSpeed(1);
-    // setLeftWheelSpeed(1);
-    // setAngleTarget(90);
+     setRightWheelSpeed(0);
+     setLeftWheelSpeed(0);
+//     setDistanceTarget(1);
+//     while(1){
+//         if(stepTargetReached()) {
+//             setRightWheelSpeed(0);
+//            setLeftWheelSpeed(0);
+//         }
+//     }
+//    // setAngleTarget(90);
 //    while(1){
-//        if(!frontWallDetected()) {
+//        if(!rightWallDetected() || !leftWallDetected()) {
 //            setRightWheelSpeed(1);
 //            setLeftWheelSpeed(1);
 //        } else {
@@ -328,7 +356,10 @@ int main(int argc, char** argv) {
 //            setLeftWheelSpeed(0);
 //        }
 //    }
-    while(1) {
+//     while(!stepTargetReached()) {}  
+//     setRightWheelSpeed(0);
+//     setLeftWheelSpeed(0); 
+     while(1) {
         switch (state){
             case CENTERED:
                 if (!leftQRDIsWhite()) {
@@ -339,18 +370,12 @@ int main(int argc, char** argv) {
                     state = RIGHT;
                     setRightWheelSpeed(0.5);
                     setLeftWheelSpeed(2);
-                } else if (leftWallDetected() && rightWallDetected()) {
-                    if (ballIsWhite()) {
-                        setRightWheelSpeed(1);
-                        setLeftWheelSpeed(-0.5);
-                        setAngleTarget(90);
-                        state = RETURNWHITETURN;
-                    } else {
-                        setRightWheelSpeed(-0.5);
-                        setLeftWheelSpeed(1);
-                        setAngleTarget(90);
-                        state = RETURNBLACKTURN;
-                    }
+                }
+                else if (leftWallDetected() && rightWallDetected() && sampleReturnAllowed) {
+                    setRightWheelSpeed(1);
+                    setLeftWheelSpeed(1);
+                    setDistanceTarget(4);
+                    state = RETURNSTRAIGHT;
                 }
                 break;
             case LEFT:
@@ -361,18 +386,12 @@ int main(int argc, char** argv) {
                 } else if (!rightQRDIsWhite()) {
                     state = LOST;
                     setTimer(500);
-                } else if (leftWallDetected() && rightWallDetected()) {
-                    if (ballIsWhite()) {
-                        setRightWheelSpeed(1);
-                        setLeftWheelSpeed(-0.5);
-                        setAngleTarget(90);
-                        state = RETURNWHITETURN;
-                    } else {
-                        setRightWheelSpeed(-0.5);
-                        setLeftWheelSpeed(1);
-                        setAngleTarget(90);
-                        state = RETURNBLACKTURN;
-                    }
+                } 
+                else if (leftWallDetected() && rightWallDetected() && sampleReturnAllowed) {
+                    setRightWheelSpeed(1);
+                    setLeftWheelSpeed(1);
+                    setDistanceTarget(4);
+                    state = RETURNSTRAIGHT;
                 }
                 break;
             case RIGHT:
@@ -383,18 +402,12 @@ int main(int argc, char** argv) {
                 } else if (!leftQRDIsWhite()) {
                     state = LOST;
                     setTimer(500);
-                } else if (leftWallDetected() && rightWallDetected()) {
-                    if (ballIsWhite()) {
-                        setRightWheelSpeed(1);
-                        setLeftWheelSpeed(-0.5);
-                        setAngleTarget(90);
-                        state = RETURNWHITETURN;
-                    } else {
-                        setRightWheelSpeed(-0.5);
-                        setLeftWheelSpeed(1);
-                        setAngleTarget(90);
-                        state = RETURNBLACKTURN;
-                    }
+                }
+                else if (leftWallDetected() && rightWallDetected() && sampleReturnAllowed) {
+                    setRightWheelSpeed(1);
+                    setLeftWheelSpeed(1);
+                    setDistanceTarget(4);
+                    state = RETURNSTRAIGHT;
                 }
                 break;
             case LOST:
@@ -406,11 +419,12 @@ int main(int argc, char** argv) {
                    state = LEFT;
                    setRightWheelSpeed(2);
                    setLeftWheelSpeed(0.5);
-               } else if (rightWallDetected() || leftWallDetected() || frontWallDetected()) {
-                        setRightWheelSpeed(1);
-                        setLeftWheelSpeed(1);
-                        state = CANYONSTRAIGHT;
-                }
+               } 
+//               else if (rightWallDetected() || leftWallDetected() || frontWallDetected()) {
+//                        setRightWheelSpeed(1);
+//                        setLeftWheelSpeed(1);
+//                        state = CANYONSTRAIGHT;
+//                }
 //                else if (timer2Done()) {
 //                    if (rightWallDetected() || leftWallDetected () || frontWallDetected()) {
 //                        setRightWheelSpeed(1);
@@ -481,55 +495,74 @@ int main(int argc, char** argv) {
                 break;
             case RETURNWHITETURN:
                 if (stepTargetReached()) {
-                    setLeftWheelSpeed(1);
-                    setRightWheelSpeed(1);
-                    setDistanceTarget(3);
+                    setLeftWheelSpeed(-1);
+                    setRightWheelSpeed(-1);
+                    setDistanceTarget(7);
                     state = RETURNWHITEFORWARD;
                 }
                 break;
             case RETURNBLACKTURN:
                 if (stepTargetReached()) {
-                    setLeftWheelSpeed(1);
-                    setRightWheelSpeed(1);
-                    setDistanceTarget(3);
+                    setLeftWheelSpeed(-1);
+                    setRightWheelSpeed(-1);
+                    setDistanceTarget(7);
                     state = RETURNBLACKFORWARD;
                 }
                 break;
             case RETURNWHITEFORWARD:
                 if (stepTargetReached()) {
-                    setLeftWheelSpeed(-1);
-                    setRightWheelSpeed(-1);
+                    setLeftWheelSpeed(1);
+                    setRightWheelSpeed(1);
+                    setDistanceTarget(7);
                     state = RETURNWHITEBACKWARD;
                 }     
                 break;
             case RETURNBLACKFORWARD:
                 if (stepTargetReached()) {
-                    setLeftWheelSpeed(-1);
-                    setRightWheelSpeed(-1);
+                    setLeftWheelSpeed(1);
+                    setRightWheelSpeed(1);
+                    setDistanceTarget(7);
                     state = RETURNBLACKBACKWARD;
                 }
                 break;
             case RETURNWHITEBACKWARD:
-                if(leftQRDIsWhite() || rightQRDIsWhite()) {
-                    setLeftWheelSpeed(1);
-                    setRightWheelSpeed(-0.5);
+                if(stepTargetReached()) {
+                    setLeftWheelSpeed(-1);
+                    setRightWheelSpeed(1);
                     setAngleTarget(45);
                     state = RETURNTURN;
                 }
                 break;
             case RETURNBLACKBACKWARD:
-                if(leftQRDIsWhite() || rightQRDIsWhite()) {
-                    setLeftWheelSpeed(-0.5);
-                    setRightWheelSpeed(1);
+                if(stepTargetReached()) {
+                    setLeftWheelSpeed(1);
+                    setRightWheelSpeed(-1);
                     setAngleTarget(45);
                     state = RETURNTURN;
                 }
                 break;
             case RETURNTURN:
                 if(stepTargetReached()) {
+                    T3CONbits.TON = 1; //Turn on timer
+                    TMR3 = 0;
+                    sampleReturnAllowed = 0;
                     state = TURNTOLINE;
                 }
                 break;
+            case RETURNSTRAIGHT:
+                if(stepTargetReached()) {
+                    if (ballIsWhite()) {
+                        setRightWheelSpeed(-1);
+                        setLeftWheelSpeed(1);
+                        setAngleTarget(90);
+                        state = RETURNWHITETURN;
+                    } else {
+                        setRightWheelSpeed(1);
+                        setLeftWheelSpeed(-1);
+                        setAngleTarget(90);
+                        state = RETURNBLACKTURN;
+                    }
+                }
         }
     }
     return (EXIT_SUCCESS);
