@@ -406,7 +406,7 @@ int main(int argc, char** argv) {
         INITIALLANDERCENTERED, INITIALLANDERRIGHT, INITIALLANDERLEFT, INITIALLANDERLOST,
         LANDEREXIT, LANDERENTRANCETURN, LANDERENTRANCESTRAIGHT, LASERSCAN, DONE
     };
-    static enum State state = CENTERED;
+    static enum State state = INITIALLANDERLOST;
     config();
     setRightWheelSpeed(0);
     setLeftWheelSpeed(0);
