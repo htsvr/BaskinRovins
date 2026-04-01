@@ -19,7 +19,7 @@
                    displayName="Source Files"
                    projectFiles="true">
     </logicalFolder>
-    <itemPath>newmainone.c</itemPath>
+    <itemPath>newmain1.c</itemPath>
   </logicalFolder>
   <sourceRootList>
     <Elem>.</Elem>
