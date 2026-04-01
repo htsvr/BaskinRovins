@@ -22,6 +22,21 @@ unsigned int targetNumSteps = 0;
 char t2Done = 0;
 char sampleReturnAllowed = 0;
 
+
+unsigned int increaseServoAngleAndCheckForMax (int maxAngle) {
+    static unsigned int maxVoltage = 0;
+    static unsigned int bestAngle = 250;
+    if (ADC1BUF0 > maxVoltage) {
+        maxVoltage = ADC1BUF0;
+        bestAngle = OC3R;
+    }
+    OC3R += 2;
+    if (OC3R >= (((2.0*maxAngle)/180.0 + 0.5) * 500)){
+        return bestAngle;
+    }
+    return 0;
+}
+
 void __attribute__((interrupt, no_auto_psv)) _OC2Interrupt(void) {
     _OC2IF = 0;
     numSteps++;
@@ -30,6 +45,18 @@ void __attribute__((interrupt, no_auto_psv)) _OC2Interrupt(void) {
 void __attribute__((interrupt, no_auto_psv)) _OC1Interrupt(void) {
     _OC1IF = 0;
     numSteps++;
+}
+
+void __attribute__((interrupt, no_auto_psv)) _OC3Interrupt(void) { //servo motor
+    _OC3IF = 0;
+    unsigned int bestAngle = increaseServoAngleAndCheckForMax(85);
+    if (bestAngle) {
+        OC3R = bestAngle;
+        _OC3IE = 0; //disable OC3 interrupt
+        for(int i = 0; i < 1000; i++){}
+        turnOnLaser();
+        
+    }
 }
 
 void __attribute__((interrupt, no_auto_psv)) _T2Interrupt(void) {
@@ -134,6 +161,10 @@ char ballIsWhite() {
     return ADC1BUF12 < 4095 / 3;
 }
 
+void turnOnLaser() {
+    _LATA1 = 1;
+}
+
 void setRightWheelSpeed(double rot_per_sec) {
     // targetOC1RS = 4000000/(rot_per_sec*2*200);
     if (rot_per_sec == 0) {
@@ -178,7 +209,7 @@ void setTimer(unsigned int ms) {
 }
 
 void setAngleTarget(unsigned int degrees) {
-    targetNumSteps = degrees * 10;
+    targetNumSteps = degrees * 9.5;
     numSteps = 0;
     _OC1IE = 1;
     _OC2IE = 1;
@@ -189,6 +220,10 @@ void setDistanceTarget(unsigned int inches) {
     numSteps = 0;
     _OC1IE = 1;
     _OC2IE = 1;
+}
+
+void setServoAngle(int angle) {
+    OC3R = (int) (((2.0*angle)/180.0 + 0.5) * 500);
 }
 
 void setLeftWheelSpeed(double rot_per_sec) {
@@ -207,6 +242,10 @@ void setLeftWheelSpeed(double rot_per_sec) {
         OC2R = OC2RS / 2;
         OC1CON1bits.OCM = 0b110;
     }
+}
+
+void startScan() {
+    _OC3IE = 1; // Enable the OC3 interrupt
 }
 
 void config_ad(void) {
@@ -247,6 +286,14 @@ void config_ad(void) {
     _ADON = 1; // AD1CON1<15> -- Turn on A/D
 }
 
+void configT4() {
+    T4CONbits.TCS = 0;
+    T4CONbits.TCKPS = 0b01; // 8 prescaler
+    PR4 = 10000; // Period of 20 ms
+    TMR4 = 0;
+    T4CONbits.TON = 1;
+}
+
 void config_PWM() {
     OC1CON1 = 0;
     OC1CON2 = 0;
@@ -272,6 +319,19 @@ void config_PWM() {
     _OC2IP = 2; // Select the interrupt priority
     _OC2IF = 0; // Clear the interrupt flag
     _OC2IE = 0; // Disable the OC2 interrupt
+    
+    configT4();
+    OC3CON1 = 0;
+    OC3CON2 = 0;
+    OC3CON1bits.OCTSEL = 0b010;
+    OC3CON2bits.SYNCSEL = 0b11111;
+    OC3CON2bits.OCTRIG = 0;
+    OC3RS = 10000; // Period
+    OC3R = 250; // Duty cycle
+    OC3CON1bits.OCM = 0b110;
+    _OC3IP = 2; // Select the interrupt priority
+    _OC3IF = 0; // Clear the interrupt flag
+    _OC3IE = 0; // Disable the OC3 interrupt
 }
 
 void configT1() {
@@ -306,6 +366,8 @@ void configT3() {
     _T3IF = 0; // Clear interrupt flag
     _T3IE = 1; // Enable interrupt
 }
+
+
 
 void config() {
     _RCDIV = 0;
@@ -342,12 +404,13 @@ int main(int argc, char** argv) {
         RETURNWHITETURN, RETURNBLACKTURN, RETURNWHITEFORWARD, RETURNBLACKFORWARD,
         RETURNWHITEBACKWARD, RETURNBLACKBACKWARD, RETURNTURN, RETURNSTRAIGHT,
         INITIALLANDERCENTERED, INITIALLANDERRIGHT, INITIALLANDERLEFT, INITIALLANDERLOST,
-        LANDEREXIT
+        LANDEREXIT, LANDERENTRANCETURN, LANDERENTRANCESTRAIGHT, LASERSCAN, DONE
     };
-    static enum State state = INITIALLANDERLOST;
+    static enum State state = CENTERED;
     config();
     setRightWheelSpeed(0);
     setLeftWheelSpeed(0);
+    setServoAngle(135);
     //     setDistanceTarget(1);
     //     while(1){
     //         if(stepTargetReached()) {
@@ -371,7 +434,12 @@ int main(int argc, char** argv) {
     while (1) {
         switch (state) {
             case CENTERED:
-                if (!leftQRDIsWhite()) {
+                if (sideQRDIsWhite()) {
+                    state = LANDERENTRANCETURN;
+                    setRightWheelSpeed(-0.5);
+                    setLeftWheelSpeed(3);
+                    setAngleTarget(90);
+                } else if (!leftQRDIsWhite()) {
                     state = LEFT;
                     setRightWheelSpeed(4);
                     setLeftWheelSpeed(1);
@@ -387,7 +455,12 @@ int main(int argc, char** argv) {
                 }
                 break;
             case LEFT:
-                if (leftQRDIsWhite()) {
+                if (sideQRDIsWhite()) {
+                    state = LANDERENTRANCETURN;
+                    setRightWheelSpeed(-0.5);
+                    setLeftWheelSpeed(3);
+                    setAngleTarget(90);
+                } else if (leftQRDIsWhite()) {
                     state = CENTERED;
                     setRightWheelSpeed(2);
                     setLeftWheelSpeed(2);
@@ -401,7 +474,12 @@ int main(int argc, char** argv) {
                 }
                 break;
             case RIGHT:
-                if (rightQRDIsWhite()) {
+                if (sideQRDIsWhite()) {
+                    state = LANDERENTRANCETURN;
+                    setRightWheelSpeed(-0.5);
+                    setLeftWheelSpeed(3);
+                    setAngleTarget(90);
+                } else if (rightQRDIsWhite()) {
                     state = CENTERED;
                     setRightWheelSpeed(2);
                     setLeftWheelSpeed(2);
@@ -415,7 +493,12 @@ int main(int argc, char** argv) {
                 }
                 break;
             case LOST:
-                if (leftQRDIsWhite()) {
+                if (sideQRDIsWhite()) {
+                    state = LANDERENTRANCETURN;
+                    setRightWheelSpeed(-0.5);
+                    setLeftWheelSpeed(3);
+                    setAngleTarget(90);
+                } else if (leftQRDIsWhite()) {
                     state = RIGHT;
                     setRightWheelSpeed(1);
                     setLeftWheelSpeed(4);
@@ -639,6 +722,28 @@ int main(int argc, char** argv) {
                     setLeftWheelSpeed(1);
                 }
                 break;
+            case LANDERENTRANCETURN:
+                if (stepTargetReached()) {
+                    setRightWheelSpeed(-2);
+                    setLeftWheelSpeed(-2);
+                    setDistanceTarget(30);
+                    setServoAngle(35);
+                    state = LANDERENTRANCESTRAIGHT;
+                }
+                break;
+            case LANDERENTRANCESTRAIGHT:
+                if(stepTargetReached()) {
+                    setRightWheelSpeed(0);
+                    setLeftWheelSpeed(0);
+                    startScan();
+                    state = LASERSCAN;
+                }
+                break;
+            case LASERSCAN:
+                
+                break;
+            case DONE:
+                break;                
         }
     }
     return (EXIT_SUCCESS);
