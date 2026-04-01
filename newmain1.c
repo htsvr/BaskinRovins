@@ -110,6 +110,10 @@ int rightQRDIsWhite() {
     return ADC1BUF11 < 4095 / 3;
 }
 
+int sideQRDIsWhite() {
+    return ADC1BUF13 < 4095 / 3;
+}
+
 char rightWallDetected() {
     return ADC1BUF3 != 0 && ADC1BUF3 < 4095 / 5;
 }
@@ -310,6 +314,7 @@ void config() {
     _ANSB14 = 1; //leftQRD
     _ANSB13 = 1; //rightQRD
     _ANSB12 = 1; //ballQRD
+    _ANSA2 = 1; //sideQRD
     _ANSB15 = 1; //front ultrasonic
     _ANSB1 = 1; //right ultrasonic
     _ANSA2 = 1; //left ultrasonic
@@ -318,6 +323,7 @@ void config() {
     _TRISB14 = 1; //leftQRD
     _TRISB13 = 1; //rightQRD
     _TRISB12 = 1; //ballQRD
+    _TRISA2 = 1; //sideQRD
     _TRISB15 = 1; //front ultrasonic
     _TRISB1 = 1; //right ultrasonic
     _TRISA2 = 1; //left ultrasonic
@@ -334,9 +340,11 @@ int main(int argc, char** argv) {
         CENTERED, LEFT, RIGHT, LOST,
         CANYONSTRAIGHT, CANYONTURN, CANYONEXIT, TURNTOLINE,
         RETURNWHITETURN, RETURNBLACKTURN, RETURNWHITEFORWARD, RETURNBLACKFORWARD,
-        RETURNWHITEBACKWARD, RETURNBLACKBACKWARD, RETURNTURN, RETURNSTRAIGHT
+        RETURNWHITEBACKWARD, RETURNBLACKBACKWARD, RETURNTURN, RETURNSTRAIGHT,
+        INITIALLANDERCENTERED, INITIALLANDERRIGHT, INITIALLANDERLEFT, INITIALLANDERLOST,
+        LANDEREXIT
     };
-    static enum State state = LOST;
+    static enum State state = INITIALLANDERLOST;
     config();
     setRightWheelSpeed(0);
     setLeftWheelSpeed(0);
@@ -572,6 +580,65 @@ int main(int argc, char** argv) {
                         state = RETURNBLACKTURN;
                     }
                 }
+            case INITIALLANDERCENTERED:
+                if (!leftQRDIsWhite()) {
+                    state = INITIALLANDERLEFT;
+                    setRightWheelSpeed(4);
+                    setLeftWheelSpeed(1);
+                } else if (!rightQRDIsWhite()) {
+                    state = INITIALLANDERRIGHT;
+                    setRightWheelSpeed(1);
+                    setLeftWheelSpeed(4);
+                }
+                break;
+            case INITIALLANDERLEFT:
+                if (leftQRDIsWhite()) {
+                    state = INITIALLANDERCENTERED;
+                    setRightWheelSpeed(2);
+                    setLeftWheelSpeed(2);
+                } else if (!rightQRDIsWhite()) {
+                    setRightWheelSpeed(2);
+                    setLeftWheelSpeed(2);
+                    state = INITIALLANDERLOST;
+                }
+                break;
+            case INITIALLANDERRIGHT:
+                if (rightQRDIsWhite()) {
+                    state = INITIALLANDERCENTERED;
+                    setRightWheelSpeed(2);
+                    setLeftWheelSpeed(2);
+                } else if (!leftQRDIsWhite()) {
+                    setRightWheelSpeed(2);
+                    setLeftWheelSpeed(2);
+                    state = INITIALLANDERLOST;
+                }
+                break;
+            case INITIALLANDERLOST:
+                if (sideQRDIsWhite()) {
+                    state = LANDEREXIT;
+                    setRightWheelSpeed(2);
+                    setLeftWheelSpeed(-2);
+                } else if (leftQRDIsWhite()) {
+                    state = INITIALLANDERRIGHT;
+                    setRightWheelSpeed(1);
+                    setLeftWheelSpeed(4);
+                } else if (rightQRDIsWhite()) {
+                    state = INITIALLANDERLEFT;
+                    setRightWheelSpeed(4);
+                    setLeftWheelSpeed(1);
+                }
+                break;
+            case LANDEREXIT:
+                if (leftQRDIsWhite()) {
+                    state = RIGHT;
+                    setRightWheelSpeed(1);
+                    setLeftWheelSpeed(4);
+                } else if (rightQRDIsWhite()) {
+                    state = LEFT;
+                    setRightWheelSpeed(4);
+                    setLeftWheelSpeed(1);
+                }
+                break;
         }
     }
     return (EXIT_SUCCESS);
