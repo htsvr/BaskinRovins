@@ -379,7 +379,7 @@ void config() {
     _ANSA2 = 1; //sideQRD
     _ANSB15 = 1; //front ultrasonic
     _ANSA3 = 1; //right ultrasonic
-    _ANSA2 = 1; //left ultrasonic
+    _ANSB2 = 1; //left ultrasonic
     TRISB = 0x0;
     TRISA = 0x0;
     _TRISB14 = 1; //leftQRD
@@ -388,7 +388,7 @@ void config() {
     _TRISA2 = 1; //sideQRD
     _TRISB15 = 1; //front ultrasonic
     _TRISA3 = 1; //right ultrasonic
-    _TRISA2 = 1; //left ultrasonic
+    _TRISB2 = 1; //left ultrasonic
     config_ad();
     config_PWM();
     configT3();
