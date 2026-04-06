@@ -408,6 +408,23 @@ int main(int argc, char** argv) {
     };
     static enum State state = INITIALLANDERLOST;
     config();
+    while(1) {
+        if(leftWallDetected()) {
+            setLeftWheelSpeed(1);
+        } else {
+            setLeftWheelSpeed(0);
+        }
+        if (rightWallDetected()) {
+            setRightWheelSpeed(1);
+        } else {
+            setRightWheelSpeed(0);
+        }
+        if(frontWallDetected()) {
+            setServoAngle(45);
+        } else {
+            setServoAngle(135);
+        }
+    }
     setRightWheelSpeed(0);
     setLeftWheelSpeed(0);
     setServoAngle(135);
