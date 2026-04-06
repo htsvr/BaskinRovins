@@ -138,11 +138,11 @@ int rightQRDIsWhite() {
 }
 
 int sideQRDIsWhite() {
-    return ADC1BUF13 < 4095 / 3;
+    return ADC1BUF13 < 4095 / 3; //pin 7 (RA2)
 }
 
 char rightWallDetected() {
-    return ADC1BUF3 != 0 && ADC1BUF3 < 4095 / 5;
+    return ADC1BUF14 != 0 && ADC1BUF14 < 4095 / 5; //pin 8 (RA3)
 }
 
 char leftWallDetected() {
@@ -150,7 +150,7 @@ char leftWallDetected() {
 }
 
 char frontWallDetected() {
-    return ADC1BUF4 != 0 && ADC1BUF9 < 4095 / 5;
+    return ADC1BUF9 != 0 && ADC1BUF9 < 4095 / 5;
 }
 
 char shouldTurnRight() {
@@ -378,7 +378,7 @@ void config() {
     _ANSB12 = 1; //ballQRD
     _ANSA2 = 1; //sideQRD
     _ANSB15 = 1; //front ultrasonic
-    _ANSB1 = 1; //right ultrasonic
+    _ANSA3 = 1; //right ultrasonic
     _ANSA2 = 1; //left ultrasonic
     TRISB = 0x0;
     TRISA = 0x0;
@@ -387,7 +387,7 @@ void config() {
     _TRISB12 = 1; //ballQRD
     _TRISA2 = 1; //sideQRD
     _TRISB15 = 1; //front ultrasonic
-    _TRISB1 = 1; //right ultrasonic
+    _TRISA3 = 1; //right ultrasonic
     _TRISA2 = 1; //left ultrasonic
     config_ad();
     config_PWM();
