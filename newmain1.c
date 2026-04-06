@@ -142,7 +142,7 @@ int sideQRDIsWhite() {
 }
 
 char rightWallDetected() {
-    return ADC1BUF1 != 0 && ADC1BUF11 < 4095 / 5; //pin 8 (RA3)
+    return ADC1BUF1 != 0 && ADC1BUF1 < 4095 / 5; //pin 8 (RA3)
 }
 
 char leftWallDetected() {
