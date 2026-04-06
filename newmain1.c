@@ -63,6 +63,7 @@ void __attribute__((interrupt, no_auto_psv)) _T2Interrupt(void) {
     _T2IF = 0; // Clear interrupt flag
     T2CONbits.TON = 0; //Turn off timer
     t2Done = 1;
+    setServoAngle(45);
 }
 
 void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void) {
@@ -150,11 +151,11 @@ char leftWallDetected() {
 }
 
 char frontWallDetected() {
-    return ADC1BUF9 != 0 && ADC1BUF9 < 4095 / 5;
+    return ADC1BUF9 != 0 && ADC1BUF9 < 4095 / 4;
 }
 
 char shouldTurnRight() {
-    return ADC1BUF4 < ADC1BUF3;
+    return ADC1BUF4 < ADC1BUF1;
 }
 
 char ballIsWhite() {
@@ -202,10 +203,11 @@ char timer2Done() {
 }
 
 void setTimer(unsigned int ms) {
-    PR2 = ms * 15.625;
+    PR2 = ms * 16;
     TMR2 = 0;
     t2Done = 0;
     T2CONbits.TON = 1;
+    setServoAngle(135);
 }
 
 void setAngleTarget(unsigned int degrees) {
@@ -408,23 +410,23 @@ int main(int argc, char** argv) {
     };
     static enum State state = INITIALLANDERLOST;
     config();
-    while(1) {
-        if(leftWallDetected()) {
-            setLeftWheelSpeed(1);
-        } else {
-            setLeftWheelSpeed(0);
-        }
-        if (rightWallDetected()) {
-            setRightWheelSpeed(1);
-        } else {
-            setRightWheelSpeed(0);
-        }
-        if(frontWallDetected()) {
-            setServoAngle(45);
-        } else {
-            setServoAngle(135);
-        }
-    }
+//    while(1) {
+//        if(leftWallDetected()) {
+//            setLeftWheelSpeed(1);
+//        } else {
+//            setLeftWheelSpeed(0);
+//        }
+//        if (rightWallDetected()) {
+//            setRightWheelSpeed(1);
+//        } else {
+//            setRightWheelSpeed(0);
+//        }
+//        if(frontWallDetected()) {
+//            setServoAngle(45);
+//        } else {
+//            setServoAngle(135);
+//        }
+//    }
     setRightWheelSpeed(0);
     setLeftWheelSpeed(0);
     setServoAngle(135);
@@ -532,19 +534,22 @@ int main(int argc, char** argv) {
                 }
                 break;
             case CANYONSTRAIGHT:
-                if (frontWallDetected() && t2Done) {
+                setRightWheelSpeed(0);
+                setLeftWheelSpeed(0);
+                if (frontWallDetected()) {
                     if (shouldTurnRight()) {
                         setRightWheelSpeed(-2);
                         setLeftWheelSpeed(2);
                         setAngleTarget(90);
-                        state = CANYONTURN;
+                        state = DONE;
                     } else {
                         setRightWheelSpeed(2);
                         setLeftWheelSpeed(-2);
                         setAngleTarget(90);
-                        state = CANYONTURN;
+                        state = DONE;
                     }
-                } else if (leftQRDIsWhite() || rightQRDIsWhite()) {
+                }
+                else if (leftQRDIsWhite() || rightQRDIsWhite()) {
                     if (t2Done) {
                         setDistanceTarget(3);
                         setRightWheelSpeed(2);
