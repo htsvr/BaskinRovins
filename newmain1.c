@@ -142,7 +142,7 @@ int sideQRDIsWhite() {
 }
 
 char rightWallDetected() {
-    return ADC1BUF14 != 0 && ADC1BUF14 < 4095 / 5; //pin 8 (RA3)
+    return ADC1BUF1 != 0 && ADC1BUF11 < 4095 / 5; //pin 8 (RA3)
 }
 
 char leftWallDetected() {
@@ -162,7 +162,7 @@ char ballIsWhite() {
 }
 
 void turnOnLaser() {
-    _LATA1 = 1;
+    _LATA3 = 1;
 }
 
 void setRightWheelSpeed(double rot_per_sec) {
@@ -378,7 +378,7 @@ void config() {
     _ANSB12 = 1; //ballQRD
     _ANSA2 = 1; //sideQRD
     _ANSB15 = 1; //front ultrasonic
-    _ANSA3 = 1; //right ultrasonic
+    _ANSA1 = 1; //right ultrasonic
     _ANSB2 = 1; //left ultrasonic
     TRISB = 0x0;
     TRISA = 0x0;
@@ -387,7 +387,7 @@ void config() {
     _TRISB12 = 1; //ballQRD
     _TRISA2 = 1; //sideQRD
     _TRISB15 = 1; //front ultrasonic
-    _TRISA3 = 1; //right ultrasonic
+    _TRISA1 = 1; //right ultrasonic
     _TRISB2 = 1; //left ultrasonic
     config_ad();
     config_PWM();
