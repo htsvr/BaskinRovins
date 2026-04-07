@@ -63,7 +63,7 @@ void __attribute__((interrupt, no_auto_psv)) _T2Interrupt(void) {
     _T2IF = 0; // Clear interrupt flag
     T2CONbits.TON = 0; //Turn off timer
     t2Done = 1;
-    setServoAngle(45);
+    //setServoAngle(45);
 }
 
 void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void) {
@@ -186,7 +186,7 @@ void setRightWheelSpeed(double rot_per_sec) {
 
 char stepTargetReached() {
     if (numSteps >= targetNumSteps) {
-        //turn off step counting interupt
+        //turn off step counting interrupt
         _OC1IE = 0;
         _OC2IE = 0;
         return 1;
@@ -207,7 +207,7 @@ void setTimer(unsigned int ms) {
     TMR2 = 0;
     t2Done = 0;
     T2CONbits.TON = 1;
-    setServoAngle(135);
+    //setServoAngle(135);
 }
 
 void setAngleTarget(unsigned int degrees) {
@@ -242,7 +242,7 @@ void setLeftWheelSpeed(double rot_per_sec) {
         _LATA4 = 1;
         OC2RS = 10000 / (-1 * rot_per_sec);
         OC2R = OC2RS / 2;
-        OC1CON1bits.OCM = 0b110;
+        OC2CON1bits.OCM = 0b110;
     }
 }
 
@@ -382,6 +382,7 @@ void config() {
     _ANSB15 = 1; //front ultrasonic
     _ANSA1 = 1; //right ultrasonic
     _ANSB2 = 1; //left ultrasonic
+    _ANSA0 = 1; //laser photodiode
     TRISB = 0x0;
     TRISA = 0x0;
     _TRISB14 = 1; //leftQRD
@@ -391,6 +392,7 @@ void config() {
     _TRISB15 = 1; //front ultrasonic
     _TRISA1 = 1; //right ultrasonic
     _TRISB2 = 1; //left ultrasonic
+    _TRISA0 = 1; //laser photodiode
     config_ad();
     config_PWM();
     configT3();
@@ -451,6 +453,11 @@ int main(int argc, char** argv) {
     //     setRightWheelSpeed(0);
     //     setLeftWheelSpeed(0); 
     while (1) {
+        if (frontWallDetected()) {
+            turnOnLaser();
+        } else {
+            _LATA3 = 0; //turn off laser
+        }
         switch (state) {
             case CENTERED:
                 if (sideQRDIsWhite()) {
@@ -530,27 +537,31 @@ int main(int argc, char** argv) {
                     setLeftWheelSpeed(2);
                     setTimer(500);
                     state = CANYONSTRAIGHT;
+                    //setServoAngle(90);
                     //test comment
                 }
                 break;
             case CANYONSTRAIGHT:
-                setRightWheelSpeed(0);
-                setLeftWheelSpeed(0);
-                if (frontWallDetected()) {
+//                setRightWheelSpeed(0);
+//                setLeftWheelSpeed(0);
+                if (frontWallDetected() && t2Done) {
                     if (shouldTurnRight()) {
                         setRightWheelSpeed(-2);
                         setLeftWheelSpeed(2);
                         setAngleTarget(90);
-                        state = DONE;
+                        state = CANYONTURN;
                     } else {
                         setRightWheelSpeed(2);
                         setLeftWheelSpeed(-2);
                         setAngleTarget(90);
-                        state = DONE;
+                        state = CANYONTURN;
                     }
                 }
                 else if (leftQRDIsWhite() || rightQRDIsWhite()) {
                     if (t2Done) {
+//                        setLeftWheelSpeed(0);
+//                        setRightWheelSpeed(0);
+//                        state = DONE;
                         setDistanceTarget(3);
                         setRightWheelSpeed(2);
                         setLeftWheelSpeed(2);
@@ -572,9 +583,13 @@ int main(int argc, char** argv) {
                 if (stepTargetReached()) {
                     setLeftWheelSpeed(2);
                     setRightWheelSpeed(2);
+                    setTimer(500);
                     state = CANYONSTRAIGHT;
                 } else if (leftQRDIsWhite() || rightQRDIsWhite()) {
                     if (t2Done) {
+//                        setLeftWheelSpeed(0);
+//                        setRightWheelSpeed(0);
+//                        state = DONE;
                         setDistanceTarget(3);
                         setRightWheelSpeed(2);
                         setLeftWheelSpeed(2);
@@ -593,6 +608,7 @@ int main(int argc, char** argv) {
                 }
                 break;
             case CANYONEXIT:
+                //setServoAngle(90);
                 if (stepTargetReached()) {
                     if (shouldTurnRight()) {
                         setLeftWheelSpeed(4);
@@ -605,6 +621,7 @@ int main(int argc, char** argv) {
                 }
                 break;
             case TURNTOLINE:
+                //setServoAngle(0);
                 if (leftQRDIsWhite()) {
                     state = RIGHT;
                     setRightWheelSpeed(2);
@@ -765,7 +782,7 @@ int main(int argc, char** argv) {
                 
                 break;
             case DONE:
-                break;                
+                break;
         }
     }
     return (EXIT_SUCCESS);
