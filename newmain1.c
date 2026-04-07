@@ -131,7 +131,8 @@ void __attribute__((interrupt, no_auto_psv)) _T1Interrupt(void) {
 }
 
 int leftQRDIsWhite() {
-    return ADC1BUF10 < 4095 / 3;
+    return !(_RB9);
+    //return ADC1BUF10 < 4095 / 3;
 }
 
 int rightQRDIsWhite() {
@@ -166,8 +167,12 @@ void turnOnLaser() {
     _LATA3 = 1;
 }
 
+void turnOffLaser() {
+    _LATA3 = 0;
+}
+
 int samplePickupDetected() {
-    return frontWallDetected();
+    return ADC1BUF10 > 4095 / 7;
 }
 
 void setRightWheelSpeed(double rot_per_sec) {
@@ -379,7 +384,7 @@ void config() {
     _RCDIV = 0;
     ANSA = 0x0;
     ANSB = 0x0;
-    _ANSB14 = 1; //leftQRD
+    _ANSB14 = 1; //sidePhotodiode
     _ANSB13 = 1; //rightQRD
     _ANSB12 = 1; //ballQRD
     _ANSA2 = 1; //sideQRD
@@ -389,7 +394,8 @@ void config() {
     _ANSA0 = 1; //laser photodiode
     TRISB = 0x0;
     TRISA = 0x0;
-    _TRISB14 = 1; //leftQRD
+    _ANSB14 = 1; //sidePhotodiode
+    _TRISB9 = 1; //leftQRD
     _TRISB13 = 1; //rightQRD
     _TRISB12 = 1; //ballQRD
     _TRISA2 = 1; //sideQRD
@@ -412,7 +418,7 @@ int main(int argc, char** argv) {
         RETURNWHITETURN, RETURNBLACKTURN, RETURNWHITEFORWARD, RETURNBLACKFORWARD,
         RETURNWHITEBACKWARD, RETURNBLACKBACKWARD, RETURNTURN, RETURNSTRAIGHT,
         INITIALLANDERCENTERED, INITIALLANDERRIGHT, INITIALLANDERLEFT, INITIALLANDERLOST,
-        LANDEREXIT, LANDERENTRANCETURN, LANDERENTRANCESTRAIGHT, LASERSCAN, 
+        LANDEREXIT, LANDERENTRANCETURN, LANDERENTRANCESTRAIGHT, LASERSCAN, SAMPLEPICKUPLINE,
         SAMPLEPICKUPTURN, SAMPLEPICKUPBACKWARD, SAMPLEPICKUPFORWARD, SAMPLEPICKUPWAIT, DONE
     };
     static enum State state = INITIALLANDERLOST;
@@ -457,11 +463,18 @@ int main(int argc, char** argv) {
     //     while(!stepTargetReached()) {}  
     //     setRightWheelSpeed(0);
     //     setLeftWheelSpeed(0); 
+//    while (1) {
+//        if (sideQRDIsWhite()) {
+//            turnOnLaser();
+//        } else {
+//            turnOffLaser();
+//        }
+//    }
     while (1) {
         if (frontWallDetected()) {
             turnOnLaser();
         } else {
-            _LATA3 = 0; //turn off laser
+            turnOffLaser();
         }
         switch (state) {
             case CENTERED:
@@ -471,10 +484,10 @@ int main(int argc, char** argv) {
                     setLeftWheelSpeed(3);
                     setAngleTarget(90);
                 } else if (samplePickupDetected()) {
-                    setLeftWheelSpeed(-2);
+                    setLeftWheelSpeed(2);
                     setRightWheelSpeed(2);
-                    setAngleTarget(90);
-                    state = SAMPLEPICKUPTURN;
+                    setDistanceTarget(8);
+                    state = SAMPLEPICKUPLINE;
                 } else if (!leftQRDIsWhite()) {
                     state = LEFT;
                     setRightWheelSpeed(4);
@@ -497,10 +510,10 @@ int main(int argc, char** argv) {
                     setLeftWheelSpeed(3);
                     setAngleTarget(90);
                 } else if (samplePickupDetected()) {
-                    setLeftWheelSpeed(-2);
+                    setLeftWheelSpeed(2);
                     setRightWheelSpeed(2);
-                    setAngleTarget(90);
-                    state = SAMPLEPICKUPTURN;
+                    setDistanceTarget(8);
+                    state = SAMPLEPICKUPLINE;
                 } else if (leftQRDIsWhite()) {
                     state = CENTERED;
                     setRightWheelSpeed(2);
@@ -521,10 +534,10 @@ int main(int argc, char** argv) {
                     setLeftWheelSpeed(3);
                     setAngleTarget(90);
                 } else if (samplePickupDetected()) {
-                    setLeftWheelSpeed(-2);
+                    setLeftWheelSpeed(2);
                     setRightWheelSpeed(2);
-                    setAngleTarget(90);
-                    state = SAMPLEPICKUPTURN;
+                    setDistanceTarget(8);
+                    state = SAMPLEPICKUPLINE;
                 } else if (rightQRDIsWhite()) {
                     state = CENTERED;
                     setRightWheelSpeed(2);
@@ -791,7 +804,7 @@ int main(int argc, char** argv) {
                     setRightWheelSpeed(-2);
                     setLeftWheelSpeed(-2);
                     setDistanceTarget(30);
-                    setServoAngle(35);
+                    setServoAngle(55);
                     state = LANDERENTRANCESTRAIGHT;
                 }
                 break;
@@ -806,6 +819,13 @@ int main(int argc, char** argv) {
             case LASERSCAN:
                 
                 break;
+            case SAMPLEPICKUPLINE:
+                if (stepTargetReached()) {
+                    setLeftWheelSpeed(-2);
+                    setRightWheelSpeed(2);
+                    setAngleTarget(90);
+                    state = SAMPLEPICKUPTURN;
+                }
             case SAMPLEPICKUPTURN:
                 if(stepTargetReached()) {
                     setRightWheelSpeed(-2);
