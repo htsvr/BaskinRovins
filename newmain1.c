@@ -810,7 +810,7 @@ int main(int argc, char** argv) {
                 if(stepTargetReached()) {
                     setRightWheelSpeed(-2);
                     setLeftWheelSpeed(-2);
-                    setDistanceTarget(5);
+                    setDistanceTarget(16);
                     state = SAMPLEPICKUPBACKWARD;
                 }
                 break;
@@ -826,7 +826,7 @@ int main(int argc, char** argv) {
                 if(timer2Done()) {
                     setRightWheelSpeed(2);
                     setLeftWheelSpeed(2);
-                    setDistanceTarget(6);
+                    setDistanceTarget(15);
                     state = SAMPLEPICKUPFORWARD;
                 }
                 break;
