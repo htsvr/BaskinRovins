@@ -49,7 +49,7 @@ void __attribute__((interrupt, no_auto_psv)) _OC1Interrupt(void) {
 
 void __attribute__((interrupt, no_auto_psv)) _OC3Interrupt(void) { //servo motor
     _OC3IF = 0;
-    unsigned int bestAngle = increaseServoAngleAndCheckForMax(85);
+    unsigned int bestAngle = increaseServoAngleAndCheckForMax(130);
     if (bestAngle) {
         OC3R = bestAngle;
         _OC3IE = 0; //disable OC3 interrupt
@@ -152,7 +152,7 @@ int leftWallDetected() {
 }
 
 int frontWallDetected() {
-    return ADC1BUF9 != 0 && ADC1BUF9 < 4095 / 4;
+    return ADC1BUF9 < 4095 / 4;
 }
 
 int shouldTurnRight() {
@@ -471,11 +471,6 @@ int main(int argc, char** argv) {
 //        }
 //    }
     while (1) {
-        if (frontWallDetected()) {
-            turnOnLaser();
-        } else {
-            turnOffLaser();
-        }
         switch (state) {
             case CENTERED:
                 if (sideQRDIsWhite()) {
@@ -804,7 +799,7 @@ int main(int argc, char** argv) {
                     setRightWheelSpeed(-2);
                     setLeftWheelSpeed(-2);
                     setDistanceTarget(30);
-                    setServoAngle(55);
+                    setServoAngle(90);
                     state = LANDERENTRANCESTRAIGHT;
                 }
                 break;
@@ -823,7 +818,7 @@ int main(int argc, char** argv) {
                 if (stepTargetReached()) {
                     setLeftWheelSpeed(-2);
                     setRightWheelSpeed(2);
-                    setAngleTarget(90);
+                    setAngleTarget(70);
                     state = SAMPLEPICKUPTURN;
                 }
             case SAMPLEPICKUPTURN:
