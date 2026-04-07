@@ -142,28 +142,32 @@ int sideQRDIsWhite() {
     return ADC1BUF13 < 4095 / 3; //pin 7 (RA2)
 }
 
-char rightWallDetected() {
+int rightWallDetected() {
     return ADC1BUF1 != 0 && ADC1BUF1 < 4095 / 5; //pin 8 (RA3)
 }
 
-char leftWallDetected() {
+int leftWallDetected() {
     return ADC1BUF4 != 0 && ADC1BUF4 < 4095 / 5;
 }
 
-char frontWallDetected() {
+int frontWallDetected() {
     return ADC1BUF9 != 0 && ADC1BUF9 < 4095 / 4;
 }
 
-char shouldTurnRight() {
+int shouldTurnRight() {
     return ADC1BUF4 < ADC1BUF1;
 }
 
-char ballIsWhite() {
+int ballIsWhite() {
     return ADC1BUF12 < 4095 / 3;
 }
 
 void turnOnLaser() {
     _LATA3 = 1;
+}
+
+int samplePickupDetected() {
+    return frontWallDetected();
 }
 
 void setRightWheelSpeed(double rot_per_sec) {
@@ -408,7 +412,8 @@ int main(int argc, char** argv) {
         RETURNWHITETURN, RETURNBLACKTURN, RETURNWHITEFORWARD, RETURNBLACKFORWARD,
         RETURNWHITEBACKWARD, RETURNBLACKBACKWARD, RETURNTURN, RETURNSTRAIGHT,
         INITIALLANDERCENTERED, INITIALLANDERRIGHT, INITIALLANDERLEFT, INITIALLANDERLOST,
-        LANDEREXIT, LANDERENTRANCETURN, LANDERENTRANCESTRAIGHT, LASERSCAN, DONE
+        LANDEREXIT, LANDERENTRANCETURN, LANDERENTRANCESTRAIGHT, LASERSCAN, 
+        SAMPLEPICKUPTURN, SAMPLEPICKUPBACKWARD, SAMPLEPICKUPFORWARD, SAMPLEPICKUPWAIT, DONE
     };
     static enum State state = INITIALLANDERLOST;
     config();
@@ -465,6 +470,11 @@ int main(int argc, char** argv) {
                     setRightWheelSpeed(-0.5);
                     setLeftWheelSpeed(3);
                     setAngleTarget(90);
+                } else if (samplePickupDetected()) {
+                    setLeftWheelSpeed(-2);
+                    setRightWheelSpeed(2);
+                    setAngleTarget(90);
+                    state = SAMPLEPICKUPTURN;
                 } else if (!leftQRDIsWhite()) {
                     state = LEFT;
                     setRightWheelSpeed(4);
@@ -486,6 +496,11 @@ int main(int argc, char** argv) {
                     setRightWheelSpeed(-0.5);
                     setLeftWheelSpeed(3);
                     setAngleTarget(90);
+                } else if (samplePickupDetected()) {
+                    setLeftWheelSpeed(-2);
+                    setRightWheelSpeed(2);
+                    setAngleTarget(90);
+                    state = SAMPLEPICKUPTURN;
                 } else if (leftQRDIsWhite()) {
                     state = CENTERED;
                     setRightWheelSpeed(2);
@@ -505,6 +520,11 @@ int main(int argc, char** argv) {
                     setRightWheelSpeed(-0.5);
                     setLeftWheelSpeed(3);
                     setAngleTarget(90);
+                } else if (samplePickupDetected()) {
+                    setLeftWheelSpeed(-2);
+                    setRightWheelSpeed(2);
+                    setAngleTarget(90);
+                    state = SAMPLEPICKUPTURN;
                 } else if (rightQRDIsWhite()) {
                     state = CENTERED;
                     setRightWheelSpeed(2);
@@ -524,6 +544,11 @@ int main(int argc, char** argv) {
                     setRightWheelSpeed(-0.5);
                     setLeftWheelSpeed(3);
                     setAngleTarget(90);
+                } else if (samplePickupDetected()) {
+                    setLeftWheelSpeed(-2);
+                    setRightWheelSpeed(2);
+                    setAngleTarget(90);
+                    state = SAMPLEPICKUPTURN;
                 } else if (leftQRDIsWhite()) {
                     state = RIGHT;
                     setRightWheelSpeed(1);
@@ -781,6 +806,36 @@ int main(int argc, char** argv) {
             case LASERSCAN:
                 
                 break;
+            case SAMPLEPICKUPTURN:
+                if(stepTargetReached()) {
+                    setRightWheelSpeed(-2);
+                    setLeftWheelSpeed(-2);
+                    setDistanceTarget(5);
+                    state = SAMPLEPICKUPBACKWARD;
+                }
+                break;
+            case SAMPLEPICKUPBACKWARD:
+                if(stepTargetReached()) {
+                    setRightWheelSpeed(0);
+                    setLeftWheelSpeed(0);
+                    setTimer(2000);
+                    state = SAMPLEPICKUPWAIT;
+                }
+                break;
+            case SAMPLEPICKUPWAIT:
+                if(timer2Done()) {
+                    setRightWheelSpeed(2);
+                    setLeftWheelSpeed(2);
+                    setDistanceTarget(6);
+                    state = SAMPLEPICKUPFORWARD;
+                }
+                break;
+            case SAMPLEPICKUPFORWARD:
+                if(stepTargetReached()) {
+                    setLeftWheelSpeed(4);
+                    setRightWheelSpeed(-0.5);
+                    state = TURNTOLINE;
+                }
             case DONE:
                 break;
         }
