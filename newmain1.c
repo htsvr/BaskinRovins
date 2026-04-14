@@ -19,8 +19,8 @@ unsigned int targetOC1RS = 0;
 unsigned int targetOC2RS = 0;
 unsigned int numSteps = 0;
 unsigned int targetNumSteps = 0;
-char t2Done = 0;
-char sampleReturnAllowed = 0;
+int t2Done = 0;
+int sampleReturnAllowed = 0;
 
 
 unsigned int increaseServoAngleAndCheckForMax (int maxAngle) {
@@ -136,19 +136,20 @@ int leftQRDIsWhite() {
 }
 
 int rightQRDIsWhite() {
-    return ADC1BUF11 < 4095 / 3;
+    return ADC1BUF11 < 4095 / 4;
 }
 
 int sideQRDIsWhite() {
-    return ADC1BUF13 < 4095 / 3; //pin 7 (RA2)
+    return !(_RA2);
+    //return ADC1BUF13 < 4095 / 4; //pin 7 (RA2)
 }
 
 int rightWallDetected() {
-    return ADC1BUF1 != 0 && ADC1BUF1 < 4095 / 5; //pin 8 (RA3)
+    return ADC1BUF1 != 0 && ADC1BUF1 < 4095 / 4; //pin 8 (RA3)
 }
 
 int leftWallDetected() {
-    return ADC1BUF4 != 0 && ADC1BUF4 < 4095 / 5;
+    return ADC1BUF4 != 0 && ADC1BUF4 < 4095 / 4;
 }
 
 int frontWallDetected() {
@@ -172,7 +173,7 @@ void turnOffLaser() {
 }
 
 int samplePickupDetected() {
-    return ADC1BUF10 > 4095 / 7;
+    return ADC1BUF10 > 4095 / 3;
 }
 
 void setRightWheelSpeed(double rot_per_sec) {
@@ -193,7 +194,7 @@ void setRightWheelSpeed(double rot_per_sec) {
     }
 }
 
-char stepTargetReached() {
+int stepTargetReached() {
     if (numSteps >= targetNumSteps) {
         //turn off step counting interrupt
         _OC1IE = 0;
@@ -203,7 +204,7 @@ char stepTargetReached() {
     return 0;
 }
 
-char timer2Done() {
+int timer2Done() {
     if (t2Done) {
         t2Done = 0;
         return 1;
@@ -387,14 +388,14 @@ void config() {
     _ANSB14 = 1; //sidePhotodiode
     _ANSB13 = 1; //rightQRD
     _ANSB12 = 1; //ballQRD
-    _ANSA2 = 1; //sideQRD
+    _ANSA2 = 0; //sideQRD
     _ANSB15 = 1; //front ultrasonic
     _ANSA1 = 1; //right ultrasonic
     _ANSB2 = 1; //left ultrasonic
     _ANSA0 = 1; //laser photodiode
     TRISB = 0x0;
     TRISA = 0x0;
-    _ANSB14 = 1; //sidePhotodiode
+    _TRISB14 = 1; //sidePhotodiode
     _TRISB9 = 1; //leftQRD
     _TRISB13 = 1; //rightQRD
     _TRISB12 = 1; //ballQRD
@@ -411,7 +412,6 @@ void config() {
 }
 
 int main(int argc, char** argv) {
-
     static enum State {
         CENTERED, LEFT, RIGHT, LOST,
         CANYONSTRAIGHT, CANYONTURN, CANYONEXIT, TURNTOLINE,
@@ -511,8 +511,8 @@ int main(int argc, char** argv) {
                     state = SAMPLEPICKUPLINE;
                 } else if (leftQRDIsWhite()) {
                     state = CENTERED;
-                    setRightWheelSpeed(2);
-                    setLeftWheelSpeed(2);
+                    setRightWheelSpeed(3);
+                    setLeftWheelSpeed(3);
                 } else if (!rightQRDIsWhite()) {
                     state = LOST;
                 } else if (leftWallDetected() && rightWallDetected() && sampleReturnAllowed) {
@@ -535,8 +535,8 @@ int main(int argc, char** argv) {
                     state = SAMPLEPICKUPLINE;
                 } else if (rightQRDIsWhite()) {
                     state = CENTERED;
-                    setRightWheelSpeed(2);
-                    setLeftWheelSpeed(2);
+                    setRightWheelSpeed(3);
+                    setLeftWheelSpeed(3);
                 } else if (!leftQRDIsWhite()) {
                     state = LOST;
                 } else if (leftWallDetected() && rightWallDetected() && sampleReturnAllowed) {
@@ -735,6 +735,7 @@ int main(int argc, char** argv) {
                         state = RETURNBLACKTURN;
                     }
                 }
+                break;
             case INITIALLANDERCENTERED:
                 if (!leftQRDIsWhite()) {
                     state = INITIALLANDERLEFT;
@@ -799,7 +800,7 @@ int main(int argc, char** argv) {
                     setRightWheelSpeed(-2);
                     setLeftWheelSpeed(-2);
                     setDistanceTarget(30);
-                    setServoAngle(90);
+                    setServoAngle(60);
                     state = LANDERENTRANCESTRAIGHT;
                 }
                 break;
