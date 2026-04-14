@@ -173,7 +173,7 @@ void turnOffLaser() {
 }
 
 int samplePickupDetected() {
-    return ADC1BUF10 > 4095 / 3;
+    return ADC1BUF10 > 4095 / 7;
 }
 
 void setRightWheelSpeed(double rot_per_sec) {
