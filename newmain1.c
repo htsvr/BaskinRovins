@@ -136,11 +136,13 @@ int leftQRDIsWhite() {
 }
 
 int rightQRDIsWhite() {
-    return ADC1BUF11 < 4095 / 4;
+    return !(_RB13);
+    //return ADC1BUF11 < 4095 / 4;
 }
 
 int sideQRDIsWhite() {
-    return ADC1BUF13 < 4095 / 4; //pin 7 (RA2)
+    return !(_RA2);
+    //return ADC1BUF13 < 4095 / 4; //pin 7 (RA2)
 }
 
 int rightWallDetected() {
@@ -156,7 +158,22 @@ int frontWallDetected() {
 }
 
 int shouldTurnRight() {
-    return ADC1BUF4 < ADC1BUF1;
+    static dir = 0;
+    if (ADC1BUF4 < ADC1BUF1) {
+        dir++;
+        if(dir > 3) {
+            dir = 3;
+        }
+    } else {
+        dir --;
+        if(dir < -3) {
+            dir = -3;
+        }
+    }
+    if (dir == 0) {
+        return ADC1BUF4 < ADC1BUF1;
+    }
+    return dir > 0;
 }
 
 int ballIsWhite() {
@@ -391,9 +408,9 @@ void config() {
     ANSA = 0x0;
     ANSB = 0x0;
     _ANSB14 = 1; //sidePhotodiode
-    _ANSB13 = 1; //rightQRD
+    _ANSB13 = 0; //rightQRD
     _ANSB12 = 1; //ballQRD
-    _ANSA2 = 1; //sideQRD
+    _ANSA2 = 0; //sideQRD
     _ANSB15 = 1; //front ultrasonic
     _ANSA1 = 1; //right ultrasonic
     _ANSB2 = 1; //left ultrasonic
@@ -441,7 +458,7 @@ int main(int argc, char** argv) {
     while (1) {
         switch (state) {
             case CENTERED:
-                if (sideQRDIsWhite()) {
+                if (sideQRDIsWhite() && leftQRDIsWhite() && rightQRDIsWhite()) {
                     state = LANDERENTRANCETURN;
                     setRightWheelSpeed(-0.5);
                     setLeftWheelSpeed(3);
@@ -548,6 +565,7 @@ int main(int argc, char** argv) {
             case CANYONSTRAIGHT:
 //                setRightWheelSpeed(0);
 //                setLeftWheelSpeed(0);
+                shouldTurnRight();
                 if (frontWallDetected() && t2Done) {
                     if (shouldTurnRight()) {
                         setRightWheelSpeed(canyonTurnSpeedSlow);
@@ -826,7 +844,7 @@ int main(int argc, char** argv) {
                 if(timer2Done()) {
                     setRightWheelSpeed(2);
                     setLeftWheelSpeed(2);
-                    setDistanceTarget(15);
+                    setDistanceTarget(14);
                     state = SAMPLEPICKUPFORWARD;
                 }
                 break;
